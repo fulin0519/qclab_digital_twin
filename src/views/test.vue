@@ -140,168 +140,133 @@
 			// ganttsampleData.push(formatDate(sampleResult.data[0].timereleased, 4));
 
 			//batch  batchentity: "Products.1911"  batchid: "2200099133"
-			/* let batchResult = await axios.get("http://opcitsapw005l:8020/QCLab/simio/gantt/batch/95")
-			let ganttBatchData = [];
+			let batchResult = await axios.get("http://opcitsapw005l:8020/QCLab/simio/gantt/batch/95")
+			let BatchStartData = [];
+			let BatchEndData = [];
+			let BatchId = [];
 			for(let i = 0; i < batchResult.data.length; i++){
-				ganttBatchData.push({
-					
-				})
+				BatchStartData.push(formatDate(batchResult.data[i].timearrival,4))
 			}
-			ganttBatchData.push(4);
-			ganttBatchData.push(formatDate(batchResult.data[0].timearrival, 4));
-			ganttBatchData.push(formatDate(batchResult.data[0].timereleased, 4)); */
+			for(let i = 0; i < batchResult.data.length; i++){
+				BatchEndData.push(formatDate(batchResult.data[i].timereleased,4))
+			}
+			for(let i = 0; i < batchResult.data.length; i++){
+				BatchId.push(batchResult.data[i].batchid)
+			}
+			console.log("BatchStartData")
+			console.log(BatchStartData)
+			console.log("---------------------------------------------")
+			
+			// BatchStartData.push(4);
+			// BatchStartData.push(formatDate(batchResult.data[0].timearrival, 4));
+			// BatchStartData.push(formatDate(batchResult.data[0].timereleased, 4));
 
 			// console.log(ganttBatchData)
 
+			let projectItem = BatchId,
+				projectItemStart = BatchStartData,
+				projectItemEnd = BatchEndData;
+			let projectItemStartValue = projectItemStart.map((item) => {
+				return new Date(item).valueOf() // 在这把日期转换成数字
+			})
+			let projectItemDuringValue = projectItemEnd.map((item, i) => {
+				return new Date(item).valueOf() - projectItemStartValue[i]
+			})
 
-			// 各状态的颜色
-			var colors = ['red', 'orange', 'yellow', 'blue', 'green'];
-			// 状态
-			var state = ['Liu_Rong', 'Titrimeter', 'TestEntity1.1913', 'Raw Material.1912',
-				'Products.1911'];
+			let dateMin = projectItemStartValue[0];
 			echartsgantt.setOption({
-				color: colors,
-				tooltip: {
-					formatter: function(params: any) {
-						return params.value[1].substr(11) + '~' + params.value[2].substr(11);
-					}
+				title: {
+					subtext: '任务日期'
 				},
-				legend: {
-					data: state,
-					bottom: '1%',
-					selectedMode: false, // 图例设为不可点击
-					textStyle: {
-						color: '#000'
+				tooltip: {
+					trigger: 'axis',
+					formatter: function(params: any) {
+						const tar = params[1];
+						let start;
+						let enDate;
+						for (let i = 0; i < projectItem.length; i++) {
+							if (tar.axisValue === projectItem[i]) {
+								start = projectItemStart[i];
+								enDate = projectItemEnd[i];
+							}
+						}
+						return tar.name + '<br/>' 
+						+ tar.seriesName + ' : ' + Math.round(tar.value / (1000 * 60 * 60 * 24)) + '天' 
+						+ '<br/>' +'开始：' + start 
+						+ '<br/>' +	'结束：' + enDate;
 					}
 				},
 				grid: {
 					left: '3%',
-					right: '3%',
-					top: '1%',
-					bottom: '10%',
+					right: '4%',
+					bottom: '15%',
 					containLabel: true
 				},
-				xAxis: {
-					type: 'time',
-					//设置横坐标标签格式
-					axisLabel: {
-						formatter: function(value: any) {
-							var date = new Date(value);
-							return getzf(date.getFullYear()) + '/' + getzf(date.getMonth() +
-								1) + '/' + getzf(date.getDay() + 1)
-							//+ ' ' + getzf(date.getHours()) 
-							//+ ':' + getzf(date.getMinutes());
-							function getzf(num: any) {
-						  if (parseInt(num) < 10) {
-									num = '0' + num;
-								}
-								return num;
-							}
-						}
-					},
-
-				},
 				yAxis: {
-					data: state
+					type: 'category',
+					splitLine: {
+						show: false
+					},
+					data: projectItem
 				},
-				series: [
-					// 用空bar来显示图例（用来标注什么颜色代表什么意思）
-					{
-						name: state[0],
+				xAxis: {
+					type: 'value',
+					min: dateMin,
+					axisLabel: {
+						color: '#333', // 坐标轴文字颜色
+						formatter: function(param: any) {
+							let date = new Date(param);
+							let dateLabel = date.getFullYear() + '-' + (date.getMonth() + 1) +
+								'-' + date.getDate(); //x轴显示的日期格式
+							return dateLabel;
+						}
+					}
+				},
+				series: [{
+						name: 'Placeholder',
 						type: 'bar',
-						data: []
-					},
-					{
-						name: state[1],
-						type: 'bar',
-						data: []
-					},
-					{
-						name: state[2],
-						type: 'bar',
-						data: []
-					},
-					{
-						name: state[3],
-						type: 'bar',
-						data: []
-					},
-					{
-						name: state[4],
-						type: 'bar',
-						data: []
-					},
-					{
-						type: 'custom',
-						renderItem: function(params: any, api: any) {
-							//开发者自定义的图形元素渲染逻辑，是通过书写 renderItem 函数实现的
-							var categoryIndex = api.value(
-							0); //这里使用 api.value(0) 取出当前 dataItem 中第一个维度的数值。
-							var start = api.coord([api.value(1),
-							categoryIndex]); // 这里使用 api.coord(...) 将数值在当前坐标系中转换成为屏幕上的点的像素值。
-							var end = api.coord([api.value(2), categoryIndex]);
-							var height = 50;
-
-							return {
-								type: 'rect', // 表示这个图形元素是矩形。还可以是 'circle', 'sector', 'polygon' 等等。
-								shape: echarts.graphic.clipRectByRect({
-									// 矩形的位置和大小。
-									x: start[0],
-									y: start[1] - height / 2,
-									width: end[0] - start[0],
-									height: height
-								}, {
-									// 当前坐标系的包围盒。
-									x: params.coordSys.x,
-									y: params.coordSys.y,
-									width: params.coordSys.width,
-									height: params.coordSys.height
-								}),
-								style: api.style()
-							};
+						stack: 'Total',
+						itemStyle: {
+							borderColor: 'transparent',
+							color: 'transparent'
 						},
-						encode: {
-							x: [1, 2],
-							y: 0
+						emphasis: {
+							itemStyle: {
+								borderColor: 'transparent',
+								color: 'transparent'
+							}
 						},
-						data: [{
-								//value: workResult,
-								value: [0, '2021-11-05 05:54:32', '2021-11-05 23:05:32'],
-								itemStyle: {
-									color: colors[0]
-								}
-							},
-							{
-								//value: equipmentResult,
-								value: [1, '2021-11-03 05:54:32', '2021-11-05 06:05:32'],
-								itemStyle: {
-									color: colors[1]
-								}
-							},
-							{
-								//value: ganttTestData,
-								value: [2, '2021-11-02 05:54:32', '2021-11-08 06:05:32'],
-								itemStyle: {
-									color: colors[2]
-								}
-							},
-							{
-								//value: ganttsampleData,
-								value: [3, '2021-11-02 05:54:32', '2021-11-10 06:05:32'],
-								itemStyle: {
-									color: colors[3]
-								}
-							},
-							{
-								//value: ganttBatchData,
-								value: [4, '2021-11-01 05:54:32', '2021-11-11 06:05:32'],
-								itemStyle: {
-									color: colors[4]
+						data: projectItemStartValue
+					},
+					{
+						name: '周期',
+						type: 'bar',
+						stack: 'Total',
+						barWidth: '30%',
+						itemStyle: {
+							normal: {
+								color: function(params:any) {
+									var dater = params.data / (1000 * 60 * 60 * 24)
+									//自定义颜色
+									let number;
+									if (dater < 3) {
+										number = 0
+									} else if (dater < 5) {
+										number = 1
+									} else {
+										number = 2
+									}
+									const colorList = [
+										'#f6071c', '#faa019', '#0aeabc'
+									];
+									return colorList[number]
 								}
 							}
-						]
+						},
+						data: projectItemDuringValue
 					}
 				]
+
 			});
 		}
 		gettabledata()
